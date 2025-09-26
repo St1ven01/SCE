@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Consulta de Espacios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --colorin-green: #009739;
+      --colorin-green-dark: #00782c;
+      --colorin-white: #fff;
+      --colorin-gray: #f5f8fa;
+      --colorin-gray-dark: #e3eaf2;
+    }
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background: var(--colorin-white);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .container {
+      background: var(--colorin-white);
+      margin-top: 60px;
+      padding: 2.5rem 2rem 2rem 2rem;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      max-width: 420px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .logo {
+      width: 110px;
+      margin-bottom: 0.7em;
+      display: block;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--colorin-green);
+      margin-bottom: 0.2em;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      color: #444;
+      margin-bottom: 1.5em;
+      text-align: center;
+    }
+    .search-group {
+      display: flex;
+      width: 100%;
+      margin-bottom: 1.5em;
+    }
+    #busqueda {
+      flex: 1;
+      padding: 0.7em 1em;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px 0 0 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border 0.2s;
+      background: var(--colorin-white);
+    }
+    #busqueda:focus {
+      border-color: var(--colorin-green);
+    }
+    .search-btn {
+      padding: 0.7em 1.2em;
+      background: var(--colorin-green);
+      color: var(--colorin-white);
+      border: none;
+      border-radius: 0 8px 8px 0;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-btn:hover {
+      background: var(--colorin-green-dark);
+    }
+    #resultados {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      margin: 0;
+    }
+    #resultados li {
+      background: var(--colorin-gray);
+      margin-bottom: 1.1em;
+      padding: 1.3em 1.1em 1.1em 1.1em;
+      border-radius: 14px;
+      color: #222;
+      font-size: 1.04rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      word-break: break-word;
+      transition: background 0.2s, box-shadow 0.2s;
+      border: 1.5px solid #e0e7ef;
+      position: relative;
+    }
+    #resultados li:hover {
+      background: #e8f7ee;
+      box-shadow: 0 4px 18px rgba(0,151,57,0.08);
+      border-color: var(--colorin-green);
+    }
+    @media (max-width: 500px) {
+      .container {
+        padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+        margin-top: 20px;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      .logo {
+        width: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="logo-colorin.png" alt="Logo Colorin S.A." class="logo">
+    <h1>SCE</h1>
+    <div class="subtitle">Sistema de Consulta de Espacios</div>
+    <form class="search-group" onsubmit="buscar(); return false;">
+      <input type="text" id="busqueda" placeholder="Escribe para buscar..." autocomplete="off">
+      <button class="search-btn" type="submit">Buscar</button>
+    </form>
+    <ul id="resultados"></ul>
+  </div>
+  <script>
+    async function buscar() {
+      const q = document.getElementById("busqueda").value;
+      const res = await fetch(`http://localhost:3000/buscar?q=${encodeURIComponent(q)}`);
+      const datos = await res.json();
+      const lista = document.getElementById("resultados");
+      lista.innerHTML = "";
+      if (datos.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No se encontraron resultados.";
+        lista.appendChild(li);
+        return;
+      }
+      datos.forEach(d => {
+        const li = document.createElement("li");
+        if (typeof d === 'object' && d !== null) {
+          // Extraer coordenadas del campo WKT: "POINT (long lat)"
+          let lat = '', lng = '';
+          if (d.WKT && typeof d.WKT === 'string' && d.WKT.startsWith('POINT')) {
+            const match = d.WKT.match(/POINT \((-?\d+\.?\d*) (-?\d+\.?\d*)\)/);
+            if (match) {
+              lng = match[1];
+              lat = match[2];
+            }
+          }
+          li.innerHTML = `
+            <div style="display:flex;align-items:center;gap:1em;margin-bottom:0.7em;">
+              <img src='logo-colorin.png' alt='Logo Colorin S.A.' style='width:38px;height:38px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.07);background:#fff;padding:2px;object-fit:contain;'>
+              <div style="font-weight:700;font-size:1.18em;color:var(--colorin-green);letter-spacing:0.5px;">${d.ESPACIO || 'Sin nombre'}</div>
+            </div>
+            <div style="margin-bottom:0.3em;color:#333;font-size:1.04em;"><b>Dirección:</b> ${d.DIRECCION || ''}</div>
+            <div style="margin-bottom:0.3em;color:#555;font-size:0.98em;"><b>Provincia:</b> ${d.PROVINCIA || ''}</div>
+            <div style="margin-bottom:0.3em;color:#555;font-size:0.98em;"><b>Tipo:</b> ${d.TIPO || ''} <b>Visual:</b> ${d.VISUAL || ''}</div>
+            <div style="margin-bottom:0.3em;color:#555;font-size:0.98em;"><b>Tamaño:</b> ${d['TAMAÑO'] || ''}</div>
+            <div style="margin-bottom:0.3em;color:#555;font-size:0.98em;"><b>Estructura:</b> ${d.ESTRUCTURA || ''}</div>
+            ${d.COMENTARIO ? `<div style=\"margin-bottom:0.3em;color:#888;font-size:0.97em;\"><b>Comentario:</b> ${d.COMENTARIO}</div>` : ''}
+            <div style="display:flex;justify-content:center;margin-top:1.3em;">
+              ${lat && lng ? `<button onclick=\"window.open('https://www.google.com/maps?q=${lat},${lng}','_blank')\" style=\"background:var(--colorin-green);color:#fff;border:none;padding:0.5em 1.2em;border-radius:7px;cursor:pointer;font-size:1em;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.07);transition:background 0.2s;display:flex;align-items:center;gap:0.5em;\"><svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='white' viewBox='0 0 24 24' style='vertical-align:middle;'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/></svg> Ver en Google Maps</button>` : ''}
+            </div>
+          `;
+        } else {
+          li.textContent = d;
+        }
+        lista.appendChild(li);
+      });
+    }
+    document.getElementById("busqueda").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        buscar();
+      }
+    });
+  </script>
+</body>
+</html>
+
